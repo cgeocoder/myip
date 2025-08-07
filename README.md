@@ -1,12 +1,12 @@
 # myip v3.1
 ### Simple utility for getting our IPv4 address
 
-Compile:
+### Compile:
 ```
 g++ -o myip main.cpp -lcurl -O3
 ```
 
-Using:
+### Using:
 ```
 myip [OPNIONS]
 myip (v3.1) - A mini utility for getting your ip address
