@@ -1,26 +1,29 @@
-#include <stdio.h>
-#include <curl/curl.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string>
+#include <iostream>
+#include <curl/curl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <string>
-#include <iostream>
 #include <boost/algorithm/string/trim.hpp>
 
-#define VERSION "v3.0"
+#define MAJ_VERSION "3"
+#define MIN_VERSION "1"
+#define VERSION "v" MAJ_VERSION "." MIN_VERSION
+
+constexpr const char* TARGET_URL = "https://www.dnsleaktest.com/";
+constexpr const char* LOCAL_URL = "https://example.com";
 
 size_t writefunc(void *ptr, size_t size, size_t nmemb, std::string *buf) {
-    size_t new_len = size * nmemb;
-    size_t tmp = 0;
-    while (tmp < new_len) {
-        (*buf) += ((char*)ptr)[tmp];
-        ++tmp;
-    }
+    size_t new_len = size * nmemb, tmp = 0;
+
+    while (tmp < new_len)
+        (*buf) += ((char*)ptr)[tmp++];
 
     return new_len;
 }
@@ -54,11 +57,12 @@ void close_curl(CURL *curl) {
 }
 
 int print_global_ip(CURL *curl, std::string *buf, bool single = false) {
-    curl_easy_setopt(curl, CURLOPT_URL, "https://www.dnsleaktest.com/");
+    curl_easy_setopt(curl, CURLOPT_URL, TARGET_URL);
 
     CURLcode res = curl_easy_perform(curl);
     if(res != CURLE_OK) {
-        fprintf(stderr, "myip: curl_easy_perform(): failed: %s\n", curl_easy_strerror(res));
+        fprintf(stderr, "myip: curl_easy_perform(): failed: %s\n"
+        "[-] Maybe you have not the internet connetion\n", curl_easy_strerror(res));
         return 1;
     }
 
@@ -85,12 +89,13 @@ int print_global_ip(CURL *curl, std::string *buf, bool single = false) {
 int print_local_ip(CURL *curl, bool single = false) {
     char *ip;
     
-    curl_easy_setopt(curl, CURLOPT_URL, "https://example.com");
+    curl_easy_setopt(curl, CURLOPT_URL, LOCAL_URL);
 
     CURLcode res = curl_easy_perform(curl);
     if((res == CURLE_OK) && !curl_easy_getinfo(curl, CURLINFO_LOCAL_IP, &ip) && ip) {
-        std::cout << "IP" << ((single) ? ":\t\t" : " (local):\t" ) << 
-            ip << std::endl;
+        std::cout << "IP" 
+            << ((single) ? ":\t\t" : " (local):\t" ) 
+            << ip << std::endl;
     }
     else {
         fprintf(stderr, "myip: curl_easy_perform(): failed: %s\n", curl_easy_strerror(res));
@@ -131,13 +136,17 @@ int main(int argc, char* argv[]) {
                 return -1;
             }
         }
+        else if (arg1 == "-v" || arg1 == "--version") {
+            std::cout << "myip " VERSION "\n";
+        }
         else if (arg1 == "-h" || arg1 == "--help") {
             std::cout << "myip [OPNIONS]\n"
-                "myip - A mini utility for getting your ip address\n\n"
+                "myip (" << VERSION << ") - A mini utility for getting your ip address\n\n"
                 "Options:\n"
                 "\t-l/--local\t\t- print local IP address\n"
                 "\t-g/--global\t\t- print global IP address and location\n"
                 "\t-a/--all\t\t- print local and global IP addresses and location (default)\n"
+                "\t-v/--version\t\t- print program version\n"
                 "\t-h/--help\t\t- print this message\n\n";
         }
         else {
