@@ -1,5 +1,5 @@
-# myip
-Simple utility for getting our IPv4 address
+# myip v3.1
+### Simple utility for getting our IPv4 address
 
 Compile:
 ```
